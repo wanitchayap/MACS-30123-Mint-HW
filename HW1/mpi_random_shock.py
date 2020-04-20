@@ -1,5 +1,5 @@
 from mpi4py import MPI
-import matplotlib.pyplot as plt
+#import matplotlib.pyplot as plt
 import numpy as np
 import time
 
@@ -31,23 +31,23 @@ def sim_random_shock():
     # number of simulations per each core
     N = int(S/size)
     
-    eps_mat = sts.norm.rvs(loc=0, scale=sigma, size=(T, N))
-    z_mat = np.zeros((T, N))
+    eps_mat = sts.norm.rvs(loc=0, scale=sigma, size=(N, T))
+    z_mat = np.zeros((N, T))
     z_mat[0, :] = z_0
 
     for s_ind in range(N):
         z_tm1 = z_0
         for t_ind in range(T):
-            e_t = eps_mat[t_ind, s_ind]
+            e_t = eps_mat[s_ind, t_ind]
             z_t = rho * z_tm1 + (1 - rho) * mu + e_t
-            z_mat[t_ind, s_ind] = z_t
+            z_mat[s_ind, t_ind] = z_t
             z_tm1 = z_t
 
     # Gather all simulation arrays to buffer of expected size/dtype on rank 0
     z_all = None
     if rank == 0:
-        z_all = np.empty([T, S], dtype='float')
-    comm.Gather(sendbuf = z_all, recvbuf = z_all, root=0)
+        z_all = np.empty([S, T], dtype='float')
+    comm.Gather(sendbuf = z_mat, recvbuf = z_all, root=0)
 
     if rank == 0:
         time_elapsed = time.time() - t0
