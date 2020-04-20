@@ -22,16 +22,20 @@ def sim_random_shock():
     sigma = 1.0
     z_0 = mu
 
-    # Set simulation parameters, draw all idiosyncratic random shocks,
-    # and create empty containers
+    # Set simulation parameters
     S = 1000 # Set the number of lives to simulate
     T = int(4160) # Set the number of periods for each simulation
     np.random.seed(25)
-    
-    # number of simulations per each core
-    N = int(S/size)
-    
-    eps_mat = sts.norm.rvs(loc=0, scale=sigma, size=(N, T))
+
+    # scatter the idiosyncratic random shocks
+    if rank == 0:
+        eps_mat = sts.norm.rvs(loc=0, scale=sigma, size=(S, T))
+    else:
+        eps_mat = None
+    eps_mat = comm.scatter(eps_mat, root=0)
+
+    # create empty containers
+    N = eps_mat.shape[0]
     z_mat = np.zeros((N, T))
     z_mat[0, :] = z_0
 
